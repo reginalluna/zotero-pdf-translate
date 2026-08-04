@@ -1,0 +1,105 @@
+diff --git a/src/utils/task.ts b/src/utils/task.ts
+index 0fcdc4a..0000000 100644
+--- a/src/utils/task.ts
++++ b/src/utils/task.ts
+@@ -281,7 +281,7 @@ export function addTranslateAbstractTask(
+ const segmenter = new Intl.Segmenter(undefined, { granularity: "word" });
+ 
+ function setDefaultService(task: TranslateTask) {
+-  if (getPref("enableDict")) {
++  if (task.type === "text" && getPref("enableDict")) {
+     let wordCount = 0;
+     for (const s of segmenter.segment(task.raw.trim())) {
+       if (s.isWordLike) {
+diff --git a/src/hooks.ts b/src/hooks.ts
+index 6d914fa..0000000 100644
+--- a/src/hooks.ts
++++ b/src/hooks.ts
+@@ -113,25 +113,42 @@ function onNotify(
+   ids: Array<string | number>,
+   extraData: { [key: string]: any },
+ ) {
+-  if (event === "add" && type === "item") {
++  if (["add", "modify"].includes(event) && type === "item") {
++    if (extraData?.skipAutoAnnotationTranslation) {
++      return;
++    }
+     if (
+       !getPref("enableAnnotationFromSyncTranslation") &&
+       extraData?.skipAutoSync
+-    )
++    ) {
+       return;
++    }
++    if (
++      event === "modify" &&
++      !Object.prototype.hasOwnProperty.call(
++        extraData?.changed || {},
++        "annotationText",
++      )
++    ) {
++      return;
++    }
+     const annotationItems = Zotero.Items.get(ids as number[]).filter((item) =>
+       item.isAnnotation(),
+     );
+     if (annotationItems.length === 0) {
+       return;
+     }
+-    if (getPref("enableComment")) {
++    const tasks = annotationItems
++      .filter(
++        (item) =>
++          !addon.data.translate.queue.some(
++            (task) =>
++              task.type === "annotation" &&
++              task.itemId === item.id &&
++              ["waiting", "processing"].includes(task.status),
++          ),
++      )
++      .map((item) => addTranslateAnnotationTask(item.id))
++      .filter((task) => task) as TranslateTask[];
++    if (tasks.length > 0) {
+       addon.hooks.onTranslateInBatch(
+-        annotationItems
+-          .map((item) => addTranslateAnnotationTask(item.id))
+-          .filter((task) => task) as TranslateTask[],
++        tasks,
+         { noDisplay: true },
+       );
+     }
+diff --git a/src/api.ts b/src/api.ts
+index 731fe6f..0000000 100644
+--- a/src/api.ts
++++ b/src/api.ts
+@@ -170,7 +170,12 @@ async function updateStreamingAnnotation(task: TranslateTask) {
+   item[
+     savePosition === "comment" ? "annotationComment" : "annotationText"
+   ] = text;
+-  await item.saveTx({ skipSyncedUpdate: true });
++  await item.saveTx({
++    skipSyncedUpdate: true,
++    notifierData: {
++      skipAutoAnnotationTranslation: true,
++    },
++  });
+ }
+ 
+ /**
+diff --git a/src/modules/services/index.ts b/src/modules/services/index.ts
+index 676bd5c..0000000 100644
+--- a/src/modules/services/index.ts
++++ b/src/modules/services/index.ts
+@@ -306,7 +306,11 @@ export class TranslationServices {
+                   }
+                 }
+               }
+-              item.saveTx();
++              await item.saveTx({
++                notifierData: {
++                  skipAutoAnnotationTranslation: true,
++                },
++              });
+             }
+           }
+           break;
