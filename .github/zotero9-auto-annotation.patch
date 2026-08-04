@@ -15,7 +15,14 @@ diff --git a/src/hooks.ts b/src/hooks.ts
 index 6d914fa..0000000 100644
 --- a/src/hooks.ts
 +++ b/src/hooks.ts
-@@ -113,25 +113,42 @@ function onNotify(
+@@ -1,5 +1,5 @@
+ import { config } from "../package.json";
+-import { initLocale } from "./utils/locale";
++import { getString, initLocale } from "./utils/locale";
+ import {
+   registerPrefsScripts,
+   registerPrefsWindow,
+@@ -113,25 +113,66 @@ function onNotify(
    ids: Array<string | number>,
    extraData: { [key: string]: any },
  ) {
@@ -47,27 +54,81 @@ index 6d914fa..0000000 100644
        return;
      }
 -    if (getPref("enableComment")) {
-+    const tasks = annotationItems
-+      .filter(
-+        (item) =>
-+          !addon.data.translate.queue.some(
-+            (task) =>
-+              task.type === "annotation" &&
-+              task.itemId === item.id &&
-+              ["waiting", "processing"].includes(task.status),
-+          ),
-+      )
-+      .map((item) => addTranslateAnnotationTask(item.id))
-+      .filter((task) => task) as TranslateTask[];
-+    if (tasks.length > 0) {
-       addon.hooks.onTranslateInBatch(
+-      addon.hooks.onTranslateInBatch(
 -        annotationItems
 -          .map((item) => addTranslateAnnotationTask(item.id))
 -          .filter((task) => task) as TranslateTask[],
-+        tasks,
-         { noDisplay: true },
-       );
+-        { noDisplay: true },
+-      );
++
++    const tasks: TranslateTask[] = [];
++    for (const item of annotationItems) {
++      const annotationText = (item.annotationText || "").trim();
++      const pendingSelectionTask = addon.data.translate.queue.findLast(
++        (task) =>
++          task.type === "text" &&
++          task.raw === annotationText &&
++          ["waiting", "processing"].includes(task.status),
++      );
++
++      if (pendingSelectionTask) {
++        pendingSelectionTask.type = "annotation";
++        pendingSelectionTask.itemId = item.id;
++        if (pendingSelectionTask.status === "waiting") {
++          addon.hooks.onTranslate(pendingSelectionTask, {
++            noCheckZoteroItemLanguage: true,
++            noDisplay: true,
++          });
++        }
++        if (!pendingSelectionTask.result) {
++          pendingSelectionTask.result = getString("status-translating");
++        }
++        addon.api.getTemporaryRefreshHandler({
++          task: pendingSelectionTask,
++        })();
++        continue;
++      }
++
++      const alreadyQueued = addon.data.translate.queue.some(
++        (task) =>
++          task.type === "annotation" &&
++          task.itemId === item.id &&
++          ["waiting", "processing"].includes(task.status),
++      );
++      if (alreadyQueued) {
++        continue;
++      }
++
++      const task = addTranslateAnnotationTask(item.id);
++      if (task) {
++        tasks.push(task);
++      }
++    }
++
++    if (tasks.length > 0) {
++      addon.hooks.onTranslateInBatch(tasks, {
++        noCheckZoteroItemLanguage: true,
++        noDisplay: true,
++      });
      }
+   } else if (type === "tab" && ["select", "add", "close"].includes(event)) {
+     addon.data.translate.concatKey = false;
+@@ -235,8 +276,15 @@ function onReaderPopupShow(
+   addTranslateTask(selection, event.reader.itemID);
+   buildReaderPopup(event);
+   addon.hooks.onReaderPopupRefresh();
++  const task = getLastTranslateTask({ type: "text" });
+   if (getPref("enableAuto")) {
+-    addon.hooks.onTranslate();
++    addon.hooks.onTranslate(task);
++  } else if (getPref("enableComment") && task) {
++    addon.hooks.onTranslate(task, {
++      noCheckZoteroItemLanguage: true,
++      noDisplay: true,
++    });
+   }
+ }
+ 
 diff --git a/src/api.ts b/src/api.ts
 index 731fe6f..0000000 100644
 --- a/src/api.ts
@@ -86,6 +147,51 @@ index 731fe6f..0000000 100644
  }
  
  /**
+@@ -182,26 +187,31 @@ async function updateStreamingAnnotation(task: TranslateTask) {
+  */
+ function getTemporaryRefreshHandler(options?: { task?: TranslateTask }) {
+   const translateTask = options?.task;
+-  if (translateTask?.type === "annotation") {
+-    let nextUpdate = 0;
+-    return () => {
++  const newTick = `${Zotero.Utilities.randomString()}-${Date.now()}`;
++  addon.data.translate.refreshTick = newTick;
++  let nextUpdate = 0;
++  let updatingAnnotation = false;
++
++  return () => {
++    if (translateTask?.type === "annotation") {
+       const now = Date.now();
+-      if (now < nextUpdate) {
++      if (now < nextUpdate || updatingAnnotation) {
+         return;
+       }
+-      nextUpdate = now + 250;
+-      void updateStreamingAnnotation(translateTask);
+-    };
+-  }
+-  if (translateTask && translateTask.type !== "text") {
+-    return () => {};
+-  }
+-  const newTick = `${Zotero.Utilities.randomString()}-${Date.now()}`;
+-  addon.data.translate.refreshTick = newTick;
+-  return () => {
++      nextUpdate = now + 100;
++      updatingAnnotation = true;
++      void updateStreamingAnnotation(translateTask).finally(() => {
++        updatingAnnotation = false;
++      });
++      return;
++    }
++    if (translateTask && translateTask.type !== "text") {
++      return;
++    }
+     if (addon.data.translate.refreshTick === newTick) {
+       addon.hooks.onReaderPopupRefresh();
+       addon.hooks.onReaderTabPanelRefresh();
+     }
+   };
+ }
 diff --git a/src/modules/services/index.ts b/src/modules/services/index.ts
 index 676bd5c..0000000 100644
 --- a/src/modules/services/index.ts
