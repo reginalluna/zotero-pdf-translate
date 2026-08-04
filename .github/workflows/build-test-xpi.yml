@@ -1,0 +1,28 @@
+name: Build test XPI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Collect XPI
+        run: |
+          mkdir -p artifact
+          find . -type f -name '*.xpi' -not -path './artifact/*' -exec cp {} artifact/ \;
+          test "$(find artifact -type f -name '*.xpi' | wc -l)" -gt 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zotero-pdf-translate-zotero9-test
+          path: artifact/*.xpi
+          if-no-files-found: error
