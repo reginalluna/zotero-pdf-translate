@@ -22,7 +22,7 @@ index 6d914fa..0000000 100644
  import {
    registerPrefsScripts,
    registerPrefsWindow,
-@@ -113,25 +113,66 @@ function onNotify(
+@@ -113,25 +113,81 @@ function onNotify(
    ids: Array<string | number>,
    extraData: { [key: string]: any },
  ) {
@@ -113,7 +113,7 @@ index 6d914fa..0000000 100644
      }
    } else if (type === "tab" && ["select", "add", "close"].includes(event)) {
      addon.data.translate.concatKey = false;
-@@ -235,8 +276,15 @@ function onReaderPopupShow(
+@@ -235,8 +276,14 @@ function onReaderPopupShow(
    addTranslateTask(selection, event.reader.itemID);
    buildReaderPopup(event);
    addon.hooks.onReaderPopupRefresh();
@@ -147,7 +147,7 @@ index 731fe6f..0000000 100644
  }
  
  /**
-@@ -182,26 +187,31 @@ async function updateStreamingAnnotation(task: TranslateTask) {
+@@ -182,26 +187,30 @@ async function updateStreamingAnnotation(task: TranslateTask) {
   */
  function getTemporaryRefreshHandler(options?: { task?: TranslateTask }) {
    const translateTask = options?.task;
