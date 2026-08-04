@@ -128,6 +128,49 @@ async function translate(
   return data;
 }
 
+async function updateStreamingAnnotation(task: TranslateTask) {
+  if (task.status !== "processing" || !task.result || !task.itemId) {
+    return;
+  }
+
+  const item = Zotero.Items.get(task.itemId);
+  if (!item) {
+    return;
+  }
+
+  const splitChar = (getPref("splitChar") as string).trim();
+  const regex =
+    splitChar === ""
+      ? ""
+      : new RegExp(`${splitChar}[^${splitChar}]*${splitChar}`, "g");
+  const savePosition = getPref("annotationTranslationPosition") as
+    | "comment"
+    | "body";
+  const savePositionInBody = getPref("annotationTranslationPositionInBody") as
+    | "before"
+    | "after";
+  const currentText = (
+    (savePosition === "comment"
+      ? item.annotationComment
+      : item.annotationText) || ""
+  ).replace(regex, "");
+  const translationText = `${splitChar}${task.result}${splitChar}\n`;
+  let text = `${
+    currentText[currentText.length - 1] === "\n" ? "" : "\n"
+  }${translationText}`;
+
+  if (splitChar !== "") {
+    text =
+      savePosition === "body" && savePositionInBody === "before"
+        ? `${translationText}${currentText}`
+        : `${currentText}${text}`;
+  }
+
+  item[savePosition === "comment" ? "annotationComment" : "annotationText"] =
+    text;
+  await item.saveTx({ skipSyncedUpdate: true });
+}
+
 /**
  * Get a temporary refresh handler.
  * This handler will refresh the reader popup and item pane section.
@@ -136,6 +179,17 @@ async function translate(
  */
 function getTemporaryRefreshHandler(options?: { task?: TranslateTask }) {
   const translateTask = options?.task;
+  if (translateTask?.type === "annotation") {
+    let nextUpdate = 0;
+    return () => {
+      const now = Date.now();
+      if (now < nextUpdate) {
+        return;
+      }
+      nextUpdate = now + 250;
+      void updateStreamingAnnotation(translateTask);
+    };
+  }
   if (translateTask && translateTask.type !== "text") {
     return () => {};
   }
@@ -161,7 +215,6 @@ function getServices() {
 
 /**
  * Get version of the plugin.
- * @returns Version of the plugin.
  */
 function getVersion() {
   return version;
