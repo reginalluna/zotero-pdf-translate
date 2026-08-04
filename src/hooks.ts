@@ -223,10 +223,14 @@ async function onTranslateInBatch(
     Addon["data"]["translate"]["services"]["runTranslationTask"]
   >["1"] = {},
 ) {
+  const pending: Promise<void>[] = [];
   for (const task of tasks) {
-    await addon.hooks.onTranslate(task, options);
-    await Zotero.Promise.delay(addon.data.translate.batchTaskDelay);
+    pending.push(addon.hooks.onTranslate(task, options));
+    if (pending.length < tasks.length) {
+      await Zotero.Promise.delay(addon.data.translate.batchTaskDelay);
+    }
   }
+  await Promise.all(pending);
 }
 
 function onReaderPopupShow(
