@@ -1,9 +1,9 @@
 name: Build test XPI
 
 on:
-  push:
+  pull_request:
     branches:
-      - perf/zotero9-annotation-pipeline
+      - main
 
 jobs:
   build:
