@@ -146,9 +146,9 @@ async function updateStreamingAnnotation(task: TranslateTask) {
   const savePosition = getPref("annotationTranslationPosition") as
     | "comment"
     | "body";
-  const savePositionInBody = getPref(
-    "annotationTranslationPositionInBody",
-  ) as "before" | "after";
+  const savePositionInBody = getPref("annotationTranslationPositionInBody") as
+    | "before"
+    | "after";
   const currentText = (
     (savePosition === "comment"
       ? item.annotationComment
@@ -166,9 +166,8 @@ async function updateStreamingAnnotation(task: TranslateTask) {
         : `${currentText}${text}`;
   }
 
-  item[
-    savePosition === "comment" ? "annotationComment" : "annotationText"
-  ] = text;
+  item[savePosition === "comment" ? "annotationComment" : "annotationText"] =
+    text;
   await item.saveTx({ skipSyncedUpdate: true });
 }
 
