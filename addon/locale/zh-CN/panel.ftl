@@ -6,7 +6,7 @@ translate =
     } + T
 
 swapLanguage =
-    .tooltiptext = 交换语言
+    .tooltiptext = 交换语言并反向翻译
 
 auto = 自动翻译: 
 autoTranslateSelection =
@@ -27,9 +27,13 @@ copyResult =
     .label = 结果
 copyBoth =
     .label = 两者
+copyMarkdown =
+    .label = Markdown
 
 history = 历史: 
 historyPrevious =
     .label = 上一个
 historyNext =
     .label = 下一个
+historyCopy =
+    .label = 全部复制
