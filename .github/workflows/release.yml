@@ -18,8 +18,7 @@ jobs:
     if: >-
       github.ref_type == 'tag' ||
       github.event_name == 'workflow_dispatch' ||
-      startsWith(github.event.head_commit.message, 'chore(publish):') ||
-      startsWith(github.event.head_commit.message, 'chore(republish):')
+      startsWith(github.event.head_commit.message, 'chore(publish):')
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -40,14 +39,6 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Remove existing release
-        if: startsWith(github.event.head_commit.message, 'chore(republish):')
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG="v$(node -p "require('./package.json').version")"
-          gh release delete "$TAG" --yes --cleanup-tag
-
       - name: Prepare release tag
         run: |
           TAG="v$(node -p "require('./package.json').version")"
@@ -55,35 +46,6 @@ jobs:
 
       - name: Release to GitHub
         run: npm run release
-
-      - name: Set republished release notes
-        if: startsWith(github.event.head_commit.message, 'chore(republish):')
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG="v$(node -p "require('./package.json').version")"
-          cat > release-notes.md <<'EOF'
-          ## What's New
-
-          - Translation history with Previous and Next controls, with each history entry retaining its language pair.
-          - True reverse translation that creates a new translation from the previous result while keeping the original history entry.
-          - Scholar Markdown copy for the displayed original and translation, including language labels and the Zotero item title when available.
-          - Session-note export that copies all successful text translations from the current Zotero session as one Markdown research note.
-          - Combined Translate Title + Abstract batch action for one or more selected Zotero items.
-          - Text-aware source-language detection for longer selected text.
-          - Corrected inferred-language metadata when language is inferred from an item title or abstract.
-          - History-aware service and Translate controls.
-          - Updated Italian localisation for the affected controls.
-
-          ## Compatibility
-
-          Zotero 7.9.9 through Zotero 10.9.9.
-
-          ## Credits
-
-          Maintained by reginalluna. Based on the original windingwind/zotero-pdf-translate project and its contributors under the existing AGPL-3.0-or-later licence.
-          EOF
-          gh release edit "$TAG" --title "Release v1.1.0" --notes-file release-notes.md
 
       - name: Notify release
         uses: apexskier/github-release-commenter@v1
