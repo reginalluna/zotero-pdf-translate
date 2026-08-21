@@ -27,3 +27,9 @@ copyResult =
     .label = 结果
 copyBoth =
     .label = 两者
+
+history = 历史: 
+historyPrevious =
+    .label = 上一个
+historyNext =
+    .label = 下一个
