@@ -1,29 +1,35 @@
 translate =
-    .label = Translate
+    .label = Traduci
     .tooltiptext = { PLATFORM() ->
         [macos] ⌘
        *[other] Ctrl
     } + T
 
 swapLanguage =
-    .tooltiptext = Swap Language
+    .tooltiptext = Scambia lingue
 
-auto = Auto-Trans:
+auto = Traduzione automatica:
 autoTranslateSelection =
-    .label = Selection
+    .label = Selezione
 autoTranslateAnnotation =
-    .label = Annotation
+    .label = Annotazione
 
-selection = Selection:
+selection = Selezione:
 enableConcat =
-    .label = Concat Mode
+    .label = Modalità concatenazione
 clearConcat =
-    .label = Clear
+    .label = Cancella
 
-copy = Copy:
+copy = Copia:
 copyRaw =
-    .label = Raw
+    .label = Originale
 copyResult =
-    .label = Result
+    .label = Risultato
 copyBoth =
-    .label = Both
+    .label = Entrambi
+
+history = Cronologia:
+historyPrevious =
+    .label = Precedente
+historyNext =
+    .label = Successivo
