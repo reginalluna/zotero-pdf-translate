@@ -6,6 +6,7 @@ import {
   addTranslateTask,
   autoDetectLanguage,
   getLastTranslateTask,
+  getTranslateTasks,
   putTranslateTaskAtHead,
 } from "../utils/task";
 import type { TranslationServices } from "../modules/services";
@@ -18,6 +19,10 @@ export class TranslatorPanel extends PluginCEBase {
   _item: Zotero.Item | null = null;
 
   _taskID = "";
+
+  _historyOffset = 0;
+
+  _latestTextTaskID = "";
 
   get item() {
     return this._item;
@@ -104,6 +109,13 @@ export class TranslatorPanel extends PluginCEBase {
       <button id="copy-both" data-l10n-id="copyBoth" />
     </html:div>
   </html:div>
+  <html:div id="history-container" class="options-grid">
+    <html:label class="options-label" data-l10n-id="history" />
+    <html:div class="options-content">
+      <button id="history-previous" data-l10n-id="historyPrevious" />
+      <button id="history-next" data-l10n-id="historyNext" />
+    </html:div>
+  </html:div>
 </html:div>
 `),
     );
@@ -159,7 +171,21 @@ export class TranslatorPanel extends PluginCEBase {
       const langto = getPref("targetLanguage") as string;
       setPref("targetLanguage", langfrom);
       setPref("sourceLanguage", langto);
-      this._addon.hooks.onReaderTabPanelRefresh();
+
+      const task = getLastTranslateTask({ id: this._taskID });
+      if (!task) {
+        this._addon.hooks.onReaderTabPanelRefresh();
+        return;
+      }
+
+      task.langfromInferred = false;
+      putTranslateTaskAtHead(task.id);
+      this._historyOffset = 0;
+      this._latestTextTaskID = task.id;
+      this._addon.hooks.onTranslate(undefined, {
+        noCheckZoteroItemLanguage: true,
+        noCache: true,
+      });
     });
 
     this._queryID("langto")?.addEventListener("command", (e) => {
@@ -284,6 +310,27 @@ export class TranslatorPanel extends PluginCEBase {
         .copy();
     });
 
+    // History
+    const moveHistory = (offset: number) => {
+      const tasks = getTranslateTasks(
+        this._addon.data.translate.maximumQueueLength,
+      ).filter((task) => task.type === "text");
+      const maxOffset = Math.max(tasks.length - 1, 0);
+      this._historyOffset = Math.min(
+        maxOffset,
+        Math.max(0, this._historyOffset + offset),
+      );
+      this._addon.hooks.onReaderTabPanelRefresh();
+    };
+
+    this._queryID("history-previous")?.addEventListener("command", () => {
+      moveHistory(1);
+    });
+
+    this._queryID("history-next")?.addEventListener("command", () => {
+      moveHistory(-1);
+    });
+
     // Draggable text area
     const resizer = this._queryID("resizer") as HTMLElement;
     const container = this._queryID("text-container") as HTMLElement;
@@ -400,6 +447,7 @@ export class TranslatorPanel extends PluginCEBase {
     updateHidden("auto-container", "showSidebarSettings");
     updateHidden("concat-container", "showSidebarConcat");
     updateHidden("copy-container", "showSidebarCopy");
+    updateHidden("history-container", "showSidebarCopy");
 
     // Filter unconfigured services from dropdown if preference is enabled
     this._filterUnconfiguredServices();
@@ -426,22 +474,35 @@ export class TranslatorPanel extends PluginCEBase {
       reverseRawResult ? "Select or type to translate" : "",
     );
 
-    const lastTask = getLastTranslateTask();
-    if (!lastTask) {
+    const textTasks = getTranslateTasks(
+      this._addon.data.translate.maximumQueueLength,
+    ).filter((task) => task.type === "text");
+    const latestTextTask = textTasks[textTasks.length - 1];
+    const previousButton = this._queryID("history-previous") as XUL.Button;
+    const nextButton = this._queryID("history-next") as XUL.Button;
+
+    if (!latestTextTask) {
+      previousButton.disabled = true;
+      nextButton.disabled = true;
       return;
     }
-    // For manually update translation task
-    this._taskID = lastTask.id;
 
-    if (
-      lastTask.type === "text" ||
-      (lastTask.raw === "" && lastTask.result === "")
-    ) {
-      setValue("raw-text", reverseRawResult ? lastTask.result : lastTask.raw);
-      setValue(
-        "result-text",
-        reverseRawResult ? lastTask.raw : lastTask.result,
-      );
+    if (latestTextTask.id !== this._latestTextTaskID) {
+      this._historyOffset = 0;
+      this._latestTextTaskID = latestTextTask.id;
     }
+
+    const maxOffset = textTasks.length - 1;
+    this._historyOffset = Math.min(this._historyOffset, maxOffset);
+    previousButton.disabled = this._historyOffset >= maxOffset;
+    nextButton.disabled = this._historyOffset === 0;
+
+    const historyTask = textTasks[textTasks.length - 1 - this._historyOffset];
+    this._taskID = historyTask.id;
+    setValue("raw-text", reverseRawResult ? historyTask.result : historyTask.raw);
+    setValue(
+      "result-text",
+      reverseRawResult ? historyTask.raw : historyTask.result,
+    );
   }
 }
