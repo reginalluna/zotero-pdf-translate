@@ -146,6 +146,25 @@ export class TranslateTaskRunner {
       if (isInferred) {
         data.langfromInferred = true;
       }
+
+      if (
+        getPref("enableAutoDetectLanguage") &&
+        data.raw.trim().length >= 20
+      ) {
+        const textLanguage = inferLanguage(data.raw).code;
+        const textLanguageMajor = textLanguage.split("-")[0];
+        const sourceLanguageMajor = data.langfrom.split("-")[0];
+        const targetLanguageMajor = data.langto.split("-")[0];
+        if (
+          textLanguage &&
+          textLanguageMajor !== sourceLanguageMajor &&
+          textLanguageMajor !== targetLanguageMajor
+        ) {
+          ztoolkit.log("use text autoDetect", textLanguage);
+          data.langfrom = textLanguage;
+          data.langfromInferred = true;
+        }
+      }
     }
 
     // If the task is not new, update language settings
@@ -462,7 +481,7 @@ export function autoDetectLanguage(item: Zotero.Item | null) {
           // Update language field so that it can be used in the future
           itemLanguage = inferredLanguage;
           if (topItem.isRegularItem()) {
-            topItem.setField("language", fromLanguage);
+            topItem.setField("language", inferredLanguage);
           }
         }
       }
