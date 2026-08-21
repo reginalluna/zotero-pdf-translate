@@ -4,17 +4,14 @@ Translates selected text, annotations, titles, abstracts, notes, PDFs, EPUBs, an
 
 ## What's New in v1.1.0
 
-Compared with the original [`windingwind/zotero-pdf-translate` v2.4.7](https://github.com/windingwind/zotero-pdf-translate/releases/tag/v2.4.7), this release adds scholar-focused reading and metadata workflows:
+Compared with the original [`windingwind/zotero-pdf-translate` v2.4.7](https://github.com/windingwind/zotero-pdf-translate/releases/tag/v2.4.7), this release adds:
 
-- **Translation history** — browse recent text translations in the Zotero sidebar with **Previous** and **Next** during the current session. Each history entry keeps its source and target language pair.
-- **True reverse translation** — use the language-swap button to create a new translation from the previous result back into the previous source language, while keeping the original history entry.
-- **Scholar Markdown copy** — use **Copy → Markdown** to copy the displayed original and translation with language labels and the Zotero item's title when available.
-- **Session-note export** — use **History → Copy All** to copy all successful text translations from the current session as one Markdown research note.
-- **Combined metadata translation** — select one or more regular Zotero items and use **Translate Title + Abstract** to translate both fields in one batch action without replacing translations that already exist.
+- **Translation history** — browse recent text translations in the Zotero sidebar with **Previous** and **Next** controls during the current session.
+- **One-click reverse translation** — swap source and target languages and immediately retranslate the displayed text.
 - **Text-aware language detection** — detect the source language from longer selected text when automatic detection is enabled, while retaining Zotero item metadata and configured languages as fallbacks.
-- **Corrected inferred-language metadata** — when a language is inferred from an item's title or abstract, the inferred language is written to the Zotero item instead of the configured source language.
+- **Corrected inferred-language metadata** — when a language is inferred from an item's title or abstract, the inferred language is now written to the Zotero item instead of the configured source language.
 - **History-aware translation controls** — changing the translation service or pressing **Translate** while viewing a history entry acts on that displayed entry.
-- **Updated Italian localisation** — the affected reader-panel and metadata-translation controls use Italian labels.
+- **Updated Italian panel localisation** — sidebar controls added or touched by this release use Italian labels.
 
 ## Compatibility
 

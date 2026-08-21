@@ -16,34 +16,6 @@ export function registerMenu() {
     menus: [
       {
         menuType: "menuitem",
-        l10nID: `${config.addonRef}-itemmenu-translateMetadata`,
-        icon: menuIcon,
-        onCommand: (event, context) => {
-          if (!context.items?.length) {
-            return;
-          }
-          addon.hooks.onTranslateInBatch(
-            context.items
-              .flatMap((item) => [
-                addTranslateTitleTask(item.id, true),
-                addTranslateAbstractTask(item.id, true),
-              ])
-              .filter((task) => task) as TranslateTask[],
-            { noDisplay: true, noCache: true },
-          );
-        },
-        onShowing: (event, context) => {
-          context.setVisible(
-            !!(
-              getPref("showItemMenuTitleTranslation") &&
-              getPref("showItemMenuAbstractTranslation") &&
-              context.items?.every((item) => item.isRegularItem())
-            ),
-          );
-        },
-      },
-      {
-        menuType: "menuitem",
         l10nID: `${config.addonRef}-itemmenu-translateTitle`,
         icon: menuIcon,
         onCommand: (event, context) => {

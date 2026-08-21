@@ -6,7 +6,7 @@ translate =
     } + T
 
 swapLanguage =
-    .tooltiptext = Scambia lingue e traduci al contrario
+    .tooltiptext = Scambia lingue
 
 auto = Traduzione automatica:
 autoTranslateSelection =
@@ -27,13 +27,9 @@ copyResult =
     .label = Risultato
 copyBoth =
     .label = Entrambi
-copyMarkdown =
-    .label = Markdown
 
 history = Cronologia:
 historyPrevious =
     .label = Precedente
 historyNext =
     .label = Successivo
-historyCopy =
-    .label = Copia tutto
