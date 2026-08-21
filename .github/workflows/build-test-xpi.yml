@@ -10,28 +10,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Apply Zotero 9 test changes
-        run: python3 .github/apply_zotero9_auto_annotation.py
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
       - run: npm run build
-      - name: Collect XPI with Toronto timestamps
-        env:
-          TZ: America/Toronto
+      - name: Collect XPI
         run: |
-          source_xpi="$(find . -type f -name '*.xpi' -not -path './artifact/*' | head -n 1)"
-          test -n "$source_xpi"
-          rm -rf artifact unpacked
-          mkdir -p artifact unpacked
-          unzip -q "$source_xpi" -d unpacked
-          find unpacked -exec touch {} +
-          (cd unpacked && zip -X -qr ../artifact/zotero-pdf-translate-zotero9-prefetch.xpi .)
-          unzip -t artifact/zotero-pdf-translate-zotero9-prefetch.xpi
+          mkdir -p artifact
+          find . -type f -name '*.xpi' -not -path './artifact/*' -exec cp {} artifact/ \;
+          test "$(find artifact -type f -name '*.xpi' | wc -l)" -gt 0
       - uses: actions/upload-artifact@v4
         with:
-          name: zotero-pdf-translate-zotero9-prefetch
+          name: zotero-pdf-translate-test
           path: artifact/*.xpi
           if-no-files-found: error
