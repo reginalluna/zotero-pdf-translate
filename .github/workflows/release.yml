@@ -39,6 +39,12 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Remove existing release
+        run: |
+          TAG="v$(node -p "require('./package.json').version")"
+          gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag
+          git tag -d "$TAG"
+
       - name: Prepare release tag
         run: |
           TAG="v$(node -p "require('./package.json').version")"
@@ -46,6 +52,23 @@ jobs:
 
       - name: Release to GitHub
         run: npm run release
+
+      - name: Set rollback release notes
+        run: |
+          TAG="v$(node -p "require('./package.json').version")"
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes-file - <<'EOF'
+          ## Rollback
+
+          Restores the v1.1.0 source and behaviour from before the scholar workflow additions.
+
+          ## Compatibility
+
+          Zotero 7.9.9 through Zotero 10.9.9.
+
+          ## Credits
+
+          Maintained by reginalluna. Based on the original windingwind/zotero-pdf-translate project and its contributors under the existing AGPL-3.0-or-later licence.
+          EOF
 
       - name: Notify release
         uses: apexskier/github-release-commenter@v1
