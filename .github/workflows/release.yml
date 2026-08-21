@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - v**
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -12,6 +14,7 @@ permissions:
 
 jobs:
   release:
+    if: github.ref_type == 'tag' || github.event.head_commit.message == 'chore(publish): release v2.4.7'
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.GitHub_TOKEN }}
@@ -36,12 +39,6 @@ jobs:
       - name: Release to GitHub
         run: |
           npm run release
-          # cp build/update.json update.json
-          # cp build/update-beta.json update-beta.json
-          # git add update.json
-          # git add update-beta.json
-          # git commit -m 'chore(publish): synchronizing `update.json`'
-          # git push
           sleep 1s
 
       - name: Notify release
