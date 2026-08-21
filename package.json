@@ -25,7 +25,7 @@
   "author": "windingwind",
   "license": "AGPL-3.0-or-later",
   "bugs": {
-    "url": "https://github.com/reginalluna/zotero-pdf-translate/issues"
+    "url": "https://github.com/windingwind/zotero-pdf-translate/issues"
   },
   "homepage": "https://github.com/reginalluna/zotero-pdf-translate#readme",
   "dependencies": {
