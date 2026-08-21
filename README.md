@@ -2,19 +2,22 @@
 
 Translates selected text, annotations, titles, abstracts, notes, PDFs, EPUBs, and webpages in Zotero through multiple translation services.
 
-## Release
+## What's New in v1.1.0
 
-`v1.1.0` adds translation-history navigation, one-click reverse translation, and text-aware source-language detection.
+Compared with the original [`windingwind/zotero-pdf-translate` v2.4.7](https://github.com/windingwind/zotero-pdf-translate/releases/tag/v2.4.7), this release adds:
 
-`v1.0.0` is the baseline and first published release of this independent repository. Earlier upstream version numbers are not part of this repository's release line.
+- **Translation history** — browse recent text translations in the Zotero sidebar with **Previous** and **Next** controls during the current session.
+- **One-click reverse translation** — swap source and target languages and immediately retranslate the displayed text.
+- **Text-aware language detection** — detect the source language from longer selected text when automatic detection is enabled, while retaining Zotero item metadata and configured languages as fallbacks.
+- **Corrected inferred-language metadata** — when a language is inferred from an item's title or abstract, the inferred language is now written to the Zotero item instead of the configured source language.
+- **History-aware translation controls** — changing the translation service or pressing **Translate** while viewing a history entry acts on that displayed entry.
+- **Updated Italian panel localisation** — sidebar controls added or touched by this release use Italian labels.
 
 ## Compatibility
 
 | Zotero       | Download                                                                                                                            | Manifest support                                            |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | 7.9.9–10.9.9 | [`translate-for-zotero.xpi`](https://github.com/reginalluna/zotero-pdf-translate/releases/download/v1.1.0/translate-for-zotero.xpi) | `strict_min_version: 7.9.9` to `strict_max_version: 10.9.9` |
-
-The package declares support from Zotero 7.9.9 through Zotero 10.9.9, including Zotero 10.
 
 ## Install
 
@@ -23,12 +26,9 @@ The package declares support from Zotero 7.9.9 through Zotero 10.9.9, including 
 3. Open the gear menu and choose **Install Plugin From File…**.
 4. Select the downloaded XPI and follow the Zotero prompt.
 
-## Features
+## Core Features
 
 - Translate selected text in the Zotero reader pop-up and item pane.
-- Browse recent text translations with **Previous** and **Next** controls during the current Zotero session.
-- Swap source and target languages and retranslate the displayed text in one action.
-- Detect the source language from translated text when automatic language detection is enabled, while retaining Zotero item metadata and configured languages as fallbacks.
 - Save annotation translations to the annotation comment or body.
 - Translate item titles and abstracts.
 - Add selected text and its translation to notes.
