@@ -3,7 +3,9 @@ name: Release
 on:
   push:
     tags:
-      - v**
+      - "v*"
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -13,6 +15,10 @@ permissions:
 
 jobs:
   release:
+    if: >-
+      github.ref_type == 'tag' ||
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.event.head_commit.message, 'chore(publish):')
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -31,13 +37,10 @@ jobs:
         run: npm install -f
 
       - name: Build
-        run: |
-          npm run build
+        run: npm run build
 
       - name: Release to GitHub
-        run: |
-          npm run release
-          sleep 1s
+        run: npm run release
 
       - name: Notify release
         uses: apexskier/github-release-commenter@v1
