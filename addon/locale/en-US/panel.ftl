@@ -27,3 +27,9 @@ copyResult =
     .label = Result
 copyBoth =
     .label = Both
+
+history = History:
+historyPrevious =
+    .label = Previous
+historyNext =
+    .label = Next
