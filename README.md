@@ -10,8 +10,8 @@ Translates selected text, annotations, titles, abstracts, notes, PDFs, EPUBs, an
 
 ## Compatibility
 
-| Zotero | Download | Manifest support |
-| --- | --- | --- |
+| Zotero       | Download                                                                                                                            | Manifest support                                            |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | 7.9.9–10.9.9 | [`translate-for-zotero.xpi`](https://github.com/reginalluna/zotero-pdf-translate/releases/download/v1.1.0/translate-for-zotero.xpi) | `strict_min_version: 7.9.9` to `strict_max_version: 10.9.9` |
 
 The package declares support from Zotero 7.9.9 through Zotero 10.9.9, including Zotero 10.

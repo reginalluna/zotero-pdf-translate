@@ -515,7 +515,10 @@ export class TranslatorPanel extends PluginCEBase {
 
     const historyTask = textTasks[textTasks.length - 1 - this._historyOffset];
     this._taskID = historyTask.id;
-    setValue("raw-text", reverseRawResult ? historyTask.result : historyTask.raw);
+    setValue(
+      "raw-text",
+      reverseRawResult ? historyTask.result : historyTask.raw,
+    );
     setValue(
       "result-text",
       reverseRawResult ? historyTask.raw : historyTask.result,

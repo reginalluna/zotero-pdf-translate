@@ -147,10 +147,7 @@ export class TranslateTaskRunner {
         data.langfromInferred = true;
       }
 
-      if (
-        getPref("enableAutoDetectLanguage") &&
-        data.raw.trim().length >= 20
-      ) {
+      if (getPref("enableAutoDetectLanguage") && data.raw.trim().length >= 20) {
         const textLanguage = inferLanguage(data.raw).code;
         const textLanguageMajor = textLanguage.split("-")[0];
         const sourceLanguageMajor = data.langfrom.split("-")[0];
