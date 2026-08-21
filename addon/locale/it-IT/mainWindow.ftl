@@ -1,16 +1,18 @@
 itemPaneSection-header =
-    .label = Translate
+    .label = Traduci
 itemPaneSection-sidenav =
-    .tooltiptext = Translate
+    .tooltiptext = Traduci
 itemPaneSection-fullHeight =
-    .tooltiptext = Full height
+    .tooltiptext = Altezza completa
 itemPaneSection-openStandalone =
-    .tooltiptext = Open in standalone window
+    .tooltiptext = Apri in finestra separata
 
-field-titleTranslation = Title Translation
-field-abstractTranslation = Abstract Translation
+field-titleTranslation = Traduzione titolo
+field-abstractTranslation = Traduzione abstract
 
+itemmenu-translateMetadata =
+    .label = Traduci titolo + abstract
 itemmenu-translateTitle =
-    .label = Traduci Titolo
+    .label = Traduci titolo
 itemmenu-translateAbstract =
-    .label = Traduci Abstract
+    .label = Traduci abstract

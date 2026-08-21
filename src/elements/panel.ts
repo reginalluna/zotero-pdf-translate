@@ -8,12 +8,35 @@ import {
   getLastTranslateTask,
   getTranslateTasks,
   putTranslateTaskAtHead,
+  type TranslateTask,
 } from "../utils/task";
 import type { TranslationServices } from "../modules/services";
 
 //@ts-expect-error addon instance not typed
 const services = Zotero[config.addonInstance].data.translate
   .services as TranslationServices;
+
+function getTaskTitle(task: TranslateTask) {
+  const item = task.itemId ? Zotero.Items.get(task.itemId) : false;
+  if (!item) {
+    return "";
+  }
+  const topItem = Zotero.Items.getTopLevel([item])[0] || item;
+  return (topItem.getField("title") as string) || "";
+}
+
+function taskToMarkdown(task: TranslateTask, heading = "Translation") {
+  const title = getTaskTitle(task);
+  const sourceLanguage = task.langfrom || "auto";
+  const targetLanguage = task.langto || "";
+  return [
+    `## ${heading}${title ? ` — ${title}` : ""}`,
+    `**Original (${sourceLanguage})**`,
+    task.raw,
+    `**Translation (${targetLanguage})**`,
+    task.result,
+  ].join("\n\n");
+}
 
 export class TranslatorPanel extends PluginCEBase {
   _item: Zotero.Item | null = null;
@@ -107,6 +130,7 @@ export class TranslatorPanel extends PluginCEBase {
       <button id="copy-raw" data-l10n-id="copyRaw" />
       <button id="copy-result" data-l10n-id="copyResult" />
       <button id="copy-both" data-l10n-id="copyBoth" />
+      <button id="copy-markdown" data-l10n-id="copyMarkdown" />
     </html:div>
   </html:div>
   <html:div id="history-container" class="options-grid">
@@ -114,6 +138,7 @@ export class TranslatorPanel extends PluginCEBase {
     <html:div class="options-content">
       <button id="history-previous" data-l10n-id="historyPrevious" />
       <button id="history-next" data-l10n-id="historyNext" />
+      <button id="history-copy" data-l10n-id="historyCopy" />
     </html:div>
   </html:div>
 </html:div>
@@ -174,6 +199,11 @@ export class TranslatorPanel extends PluginCEBase {
     this._queryID("langfrom")?.addEventListener("command", (e) => {
       const newValue = (e.target as XUL.MenuList).value;
       setPref("sourceLanguage", newValue);
+      const task = getLastTranslateTask({ id: this._taskID });
+      if (task) {
+        task.langfrom = newValue;
+        task.langfromInferred = false;
+      }
       const itemID = this.item?.id;
       if (itemID) {
         this._addon.data.translate.cachedSourceLanguage[Number(itemID)] =
@@ -183,29 +213,47 @@ export class TranslatorPanel extends PluginCEBase {
     });
 
     this._queryID("swap-language")?.addEventListener("command", () => {
-      const langfrom = getPref("sourceLanguage") as string;
-      const langto = getPref("targetLanguage") as string;
+      const currentTask = getLastTranslateTask({ id: this._taskID });
+      const langfrom =
+        currentTask?.langfrom || (getPref("sourceLanguage") as string);
+      const langto =
+        currentTask?.langto || (getPref("targetLanguage") as string);
       setPref("targetLanguage", langfrom);
       setPref("sourceLanguage", langto);
 
-      const task = getLastTranslateTask({ id: this._taskID });
-      if (!task) {
+      if (currentTask?.status !== "success" || !currentTask.result.trim()) {
         this._addon.hooks.onReaderTabPanelRefresh();
         return;
       }
 
+      const task = addTranslateTask(
+        currentTask.result,
+        currentTask.itemId || this.item?.id,
+        "text",
+        currentTask.service,
+      );
+      if (!task) {
+        return;
+      }
+      task.langfrom = langto;
+      task.langto = langfrom;
       task.langfromInferred = false;
-      putTranslateTaskAtHead(task.id);
+      this._taskID = task.id;
       this._historyOffset = 0;
       this._latestTextTaskID = task.id;
-      this._addon.hooks.onTranslate(undefined, {
+      this._addon.hooks.onTranslate(task, {
         noCheckZoteroItemLanguage: true,
         noCache: true,
       });
     });
 
     this._queryID("langto")?.addEventListener("command", (e) => {
-      setPref("targetLanguage", (e.target as XUL.MenuList).value);
+      const newValue = (e.target as XUL.MenuList).value;
+      setPref("targetLanguage", newValue);
+      const task = getLastTranslateTask({ id: this._taskID });
+      if (task) {
+        task.langto = newValue;
+      }
       this._addon.hooks.onReaderTabPanelRefresh();
     });
 
@@ -326,6 +374,16 @@ export class TranslatorPanel extends PluginCEBase {
         .copy();
     });
 
+    this._queryID("copy-markdown")?.addEventListener("command", () => {
+      const task = getLastTranslateTask({ id: this._taskID });
+      if (!task) {
+        return;
+      }
+      new this._addon.data.ztoolkit.Clipboard()
+        .addText(taskToMarkdown(task), "text/plain")
+        .copy();
+    });
+
     // History
     const moveHistory = (offset: number) => {
       const tasks = getTranslateTasks(
@@ -345,6 +403,30 @@ export class TranslatorPanel extends PluginCEBase {
 
     this._queryID("history-next")?.addEventListener("command", () => {
       moveHistory(-1);
+    });
+
+    this._queryID("history-copy")?.addEventListener("command", () => {
+      const tasks = getTranslateTasks(
+        this._addon.data.translate.maximumQueueLength,
+      ).filter(
+        (task) =>
+          task.type === "text" &&
+          task.status === "success" &&
+          task.result.trim(),
+      );
+      if (!tasks.length) {
+        return;
+      }
+      new this._addon.data.ztoolkit.Clipboard()
+        .addText(
+          tasks
+            .map((task, index) =>
+              taskToMarkdown(task, `Translation ${index + 1}`),
+            )
+            .join("\n\n---\n\n"),
+          "text/plain",
+        )
+        .copy();
     });
 
     // Draggable text area
@@ -496,10 +578,12 @@ export class TranslatorPanel extends PluginCEBase {
     const latestTextTask = textTasks[textTasks.length - 1];
     const previousButton = this._queryID("history-previous") as XUL.Button;
     const nextButton = this._queryID("history-next") as XUL.Button;
+    const historyCopyButton = this._queryID("history-copy") as XUL.Button;
 
     if (!latestTextTask) {
       previousButton.disabled = true;
       nextButton.disabled = true;
+      historyCopyButton.disabled = true;
       return;
     }
 
@@ -512,9 +596,14 @@ export class TranslatorPanel extends PluginCEBase {
     this._historyOffset = Math.min(this._historyOffset, maxOffset);
     previousButton.disabled = this._historyOffset >= maxOffset;
     nextButton.disabled = this._historyOffset === 0;
+    historyCopyButton.disabled = !textTasks.some(
+      (task) => task.status === "success" && task.result.trim(),
+    );
 
     const historyTask = textTasks[textTasks.length - 1 - this._historyOffset];
     this._taskID = historyTask.id;
+    setValue("langfrom", historyTask.langfrom || fromLanguage);
+    setValue("langto", historyTask.langto || toLanguage);
     setValue(
       "raw-text",
       reverseRawResult ? historyTask.result : historyTask.raw,
