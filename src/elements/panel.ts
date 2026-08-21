@@ -126,12 +126,18 @@ export class TranslatorPanel extends PluginCEBase {
     this._queryID("services")?.addEventListener("command", (e) => {
       const newService = (e.target as XUL.MenuList).value;
       setPref("translateSource", newService);
-      this._addon.hooks.onReaderTabPanelRefresh();
-      const data = getLastTranslateTask();
+      const data =
+        getLastTranslateTask({ id: this._taskID }) || getLastTranslateTask();
       if (!data) {
+        this._addon.hooks.onReaderTabPanelRefresh();
         return;
       }
       data.service = newService;
+      putTranslateTaskAtHead(data.id);
+      this._historyOffset = 0;
+      if (data.type === "text") {
+        this._latestTextTaskID = data.id;
+      }
       this._addon.hooks.onTranslate(undefined, {
         noCheckZoteroItemLanguage: true,
       });
@@ -139,14 +145,24 @@ export class TranslatorPanel extends PluginCEBase {
 
     // Translate
     this._queryID("translate")?.addEventListener("command", () => {
-      if (!getLastTranslateTask()) {
-        addTranslateTask(
+      let task = getLastTranslateTask({ id: this._taskID });
+      if (!task) {
+        task = addTranslateTask(
           (
             this._queryID(
               getPref("rawResultOrder") ? "result-text" : "raw-text",
             ) as HTMLTextAreaElement
           )?.value,
         );
+      }
+      if (!task) {
+        return;
+      }
+      this._taskID = task.id;
+      putTranslateTaskAtHead(task.id);
+      this._historyOffset = 0;
+      if (task.type === "text") {
+        this._latestTextTaskID = task.id;
       }
       this._addon.hooks.onTranslate(undefined, {
         noCheckZoteroItemLanguage: true,
